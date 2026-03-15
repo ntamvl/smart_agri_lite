@@ -1,5 +1,5 @@
 class MqttService
-  config = YAML.load_file(Rails.root.join("config/mqtt.yml"))
+  config = YAML.load_file(Rails.root.join("config/mqtt.yml")).deep_symbolize_keys
 
   MQTT_CONFIG = {
     host: config[:host],
