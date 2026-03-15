@@ -1,0 +1,73 @@
+# Dockerfile.dev
+ARG RUBY_VERSION=4.0.1
+ARG NODE_VERSION=22.14.0
+ARG YARN_VERSION=1.22.22
+ARG BUN_VERSION=1.2.26
+ARG ESBUILD_VERSION=0.25.10
+ARG RAILS_VERSION=8.1.2
+
+# FROM ruby:$RUBY_VERSION-slim AS base
+
+# Use a full-featured Ruby image
+# FROM ruby:$RUBY_VERSION-bookworm AS base
+FROM ruby:$RUBY_VERSION-slim AS base
+
+# Set development environment
+ENV RAILS_ENV="development" \
+    BUNDLE_DEPLOYMENT="1" \
+    BUNDLE_PATH="/usr/local/bundle" \
+    PATH=/usr/local/node/bin:$PATH
+
+# Install net-tools
+RUN apt-get update
+RUN apt-get install -y curl build-essential libjemalloc2 libvips postgresql-client gnupg
+RUN apt-get install -y imagemagick libvips-dev ffmpeg
+RUN apt-get install -y net-tools iputils-ping dnsutils
+RUN apt-get install -y bash-completion
+RUN apt-get update -qq && \
+    apt-get install -y git libpq-dev libyaml-dev node-gyp pkg-config python-is-python3 && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+RUN curl -fsSL https://raw.githubusercontent.com/tj/n/master/bin/n | bash -s install lts
+RUN npm install -g yarn@$YARN_VERSION
+RUN npm install -g bun@$BUN_VERSION
+RUN npm install -g esbuild@$ESBUILD_VERSION
+RUN yarn --version
+RUN bun --version
+
+# Tạo thư mục ứng dụng
+WORKDIR /app
+
+ENV NODE_PATH=/app/node_modules
+
+COPY package*.json yarn.lock ./
+# RUN npm install --verbose
+RUN yarn install
+
+RUN gem install rails -v 8.1.2
+
+# Cài đặt bundler
+RUN gem install bundler
+RUN gem install debug brakeman rubocop-rails-omakase thor foreman
+
+# Sao chép toàn bộ mã nguồn
+# COPY . .
+
+# Chỉ sao chép những file cần thiết để cài đặt gems
+# Mã nguồn được mount từ host vào trong container
+COPY Gemfile* ./
+
+# Thêm hỗ trợ kiến trúc ARM64
+# RUN bundle lock --add-platform aarch64-linux
+
+RUN bundle install
+RUN gem install bigdecimal
+
+# Cổng dùng trong dev
+EXPOSE 3000
+
+COPY ./bin/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+# Lệnh mặc định khi container chạy
+CMD ["bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]

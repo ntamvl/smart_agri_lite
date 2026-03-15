@@ -1,0 +1,18 @@
+# docker-compose.dev.yml
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./storage:/app/storage
+    tty: true
+    command: "bin/dev"
+    environment:
+      RAILS_ENV: development
+      NODE_ENV: development
+      REDIS_URL: redis://host.docker.internal:6379/0

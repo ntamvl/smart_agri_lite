@@ -1,0 +1,6 @@
+host: localhost
+port: 1883
+username: your_username
+password: your_password
+ssl: false
+# client_id: smart_agri_web
