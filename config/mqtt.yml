@@ -1,6 +1,6 @@
-host: localhost
+host: d14dc5ff5a98465e9e937c41602b006b.s1.eu.hivemq.cloud
 port: 8883
-username: username
-password: password
+username: stevennguyen
+password: Saigon2026
 ssl: true
 # client_id: smart_agri_web
