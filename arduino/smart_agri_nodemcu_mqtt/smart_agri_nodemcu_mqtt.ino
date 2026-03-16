@@ -31,6 +31,12 @@ const char* MQTT_CLIENT_ID = "TAM_VINHLONG_01_ESP8266_PIN";
 // Tên thiết bị --> đồng bộ với backend
 String CLIENT_NAME = "vinhlong/tamvinhlong/01/esp8266";
 
+// MQTT CLient Test
+// subscribe topic: vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
+// mosquitto_sub -h <host> -u <username> -P <password> -p <PORT> -t vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
+// send command to control pin: vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin -m '{"pin": 2, "value": 0}'
+// mosquitto_pub -h <host> -u <username> -P <password> -p <PORT> -t vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin -m '{"pin": 2, "value": 0}'
+
 // Topic được build tự động từ MQTT_CLIENT_ID trong setup()
 // MQTT_TOPIC_SUB --> {CLIENT_NAME}/{MQTT_CLIENT_ID}/pin
 // MQTT_TOPIC_STATUS --> {CLIENT_NAME}/{MQTT_CLIENT_ID}/status_pin
