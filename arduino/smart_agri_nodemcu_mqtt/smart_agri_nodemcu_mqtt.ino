@@ -8,7 +8,7 @@
 #include <LittleFS.h>
 #include <CertStoreBearSSL.h>
 
-String CLIENT_VERSION = "0.2.1";
+String CLIENT_VERSION = "0.2.2";
 
 // Set keep-alive 180 seconds
 #define BROKER_KEEPALIVE 5 * 60
