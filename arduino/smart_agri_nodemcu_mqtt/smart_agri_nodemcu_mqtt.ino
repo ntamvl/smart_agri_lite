@@ -227,11 +227,11 @@ void reconnectMQTT() {
 }
 
 void reconnectMQTTV2() {
-  delay(1000);
+  // delay(1000);
 
   // Set keep-alive to 180 seconds
-  mqttClient.setKeepAlive(BROKER_KEEPALIVE);
-  mqttClient.setSocketTimeout(BROKER_KEEPALIVE);
+  // mqttClient.setKeepAlive(BROKER_KEEPALIVE);
+  // mqttClient.setSocketTimeout(BROKER_KEEPALIVE);
 
   // Loop until we’re reconnected
   while (!mqttClient.connected()) {
@@ -256,8 +256,8 @@ void reconnectMQTTV2() {
       Serial.print("failed, rc = ");
       Serial.print(mqttClient.state());
       Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
+      // Wait 0.5 seconds before retrying
+      delay(500);
     }
   }
 }
@@ -266,7 +266,7 @@ void setupWifi() {
   delay(100);
 
   // Set keep-alive to 180 seconds
-  mqttClient.setKeepAlive(180);
+  // mqttClient.setKeepAlive(180);
 
   // you can use the insecure mode, when you want to avoid the certificates
   wifiClient.setInsecure();
