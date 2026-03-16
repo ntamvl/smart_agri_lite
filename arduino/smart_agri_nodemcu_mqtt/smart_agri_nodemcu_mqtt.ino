@@ -8,6 +8,8 @@
 #include <LittleFS.h>
 #include <CertStoreBearSSL.h>
 
+String CLIENT_VERSION = "0.2.0";
+
 // Set keep-alive 180 seconds
 #define BROKER_KEEPALIVE 5 * 60
 
@@ -95,6 +97,7 @@ String buildStatusJson() {
 
   doc["status"] = "ok";
   doc["ip"] = ipAddress;
+  doc["version"] = CLIENT_VERSION;
   JsonArray pins = doc.createNestedArray("pins");
 
   for (int i = 0; i < VALID_PINS_COUNT; i++) {
@@ -358,6 +361,7 @@ void setupData() {
 void setup() {
   Serial.begin(115200);
   Serial.println("\n[BOOT] ESP8266 PIN Controller");
+  Serial.println("CLIENT_VERSION: " + CLIENT_VERSION);
 
   setupData();
   setupWifi();
