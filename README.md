@@ -36,6 +36,6 @@ rails db:seed
 Xem thêm tại thư mục `arduino/README.md`
 
 ## MQTT Client
-- MQTTX (https://mqttx.app/)
+- MQTTX (https://mqttx.app/ - https://github.com/emqx/MQTTX)
+- MQTT Explorer (https://mqtt-explorer.com/ - https://github.com/thomasnordquist/MQTT-Explorer)
 - MQTT Toolbox (https://www.hivemq.com/mqtt-toolbox/)
-- MQTT Explorer (https://mqtt-explorer.com/)
