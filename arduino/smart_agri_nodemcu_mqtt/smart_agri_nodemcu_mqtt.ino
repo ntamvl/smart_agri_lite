@@ -9,6 +9,7 @@
 #include <CertStoreBearSSL.h>
 
 String CLIENT_VERSION = "0.2.0";
+String CLIENT_VERSION = "0.2.1";
 
 // Set keep-alive 180 seconds
 #define BROKER_KEEPALIVE 5 * 60
@@ -104,14 +105,15 @@ String buildStatusJson() {
   doc["status"] = "ok";
   doc["ip"] = ipAddress;
   doc["version"] = CLIENT_VERSION;
-  JsonArray pins = doc.createNestedArray("pins");
 
-  for (int i = 0; i < VALID_PINS_COUNT; i++) {
-    if (!pinStates[i].active) continue;
-    JsonObject obj = pins.createNestedObject();
-    obj["pin"]   = pinStates[i].pin;
-    obj["value"] = pinStates[i].value;
-  }
+  // JsonArray pins = doc.createNestedArray("pins");
+
+  // for (int i = 0; i < VALID_PINS_COUNT; i++) {
+  //   if (!pinStates[i].active) continue;
+  //   JsonObject obj = pins.createNestedObject();
+  //   obj["pin"]   = pinStates[i].pin;
+  //   obj["value"] = pinStates[i].value;
+  // }
 
   String output;
   serializeJson(doc, output);
@@ -277,11 +279,13 @@ void reconnectMQTTV3() {
     Serial.print("[MQTT] Attempting MQTT connection...");
 
     // Create a random client ID
-    String clientId = "ESP8266Client-";
-    clientId += String(random(0xffff), HEX);
+    // String clientId = "ESP8266Client-";
+    // clientId += String(random(0xffff), HEX);
+
+    bool connected = (strlen(MQTT_USER) > 0) ? mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD) : mqttClient.connect(MQTT_CLIENT_ID);
 
     // Attempt to connect
-    if (mqttClient.connect(clientId.c_str(), MQTT_USER, MQTT_PASSWORD)) {
+    if (connected) {
       Serial.println(" Connected!");
       Serial.println("[MQTT] state: " + String(mqttClient.state()));
 
@@ -396,10 +400,10 @@ void loop() {
   }
   mqttClient.loop();
 
-  // Publish status định kỳ mỗi 2 giây
-  if (millis() - lastStatusPublish >= STATUS_INTERVAL_MS) {
-    lastStatusPublish = millis();
-    Serial.println("[TIMER] Publishing periodic pin status...");
+  unsigned long now = millis();
+  if (now - lastStatusPublish > STATUS_INTERVAL_MS) {
+    lastStatusPublish = now;
+    Serial.println("[TIMER2] Publishing periodic pin status...");
     publishPinStatus();
   }
 }
