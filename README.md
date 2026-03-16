@@ -34,3 +34,8 @@ rails db:seed
 
 ## Arduino Code
 Xem thêm tại thư mục `arduino/README.md`
+
+## MQTT Client
+- MQTTX (https://mqttx.app/)
+- MQTT Toolbox (https://www.hivemq.com/mqtt-toolbox/)
+- MQTT Explorer (https://mqtt-explorer.com/)
