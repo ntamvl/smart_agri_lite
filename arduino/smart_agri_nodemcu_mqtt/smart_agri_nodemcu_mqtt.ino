@@ -111,7 +111,7 @@ String buildStatusJson() {
 
 // ── Publish trạng thái pin lên MQTT ──────────────────────────
 void publishPinStatus() {
-  if (!mqttClient.connected()) return;
+  // if (!mqttClient.connected()) return;
 
   String topic = MQTT_TOPIC_STATUS;
   String payload = buildStatusJson();
@@ -207,7 +207,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 // ── Kết nối lại MQTT ──────────────────────────────────────────
 void reconnectMQTT() {
   // Set keep-alive to 180 seconds
-  mqttClient.setKeepAlive(BROKER_KEEPALIVE);
+  // mqttClient.setKeepAlive(BROKER_KEEPALIVE);
 
   if (mqttClient.connected()) return;
 
@@ -256,8 +256,8 @@ void reconnectMQTTV2() {
       Serial.print("failed, rc = ");
       Serial.print(mqttClient.state());
       Serial.println(" try again in 5 seconds");
-      // Wait 0.5 seconds before retrying
-      delay(500);
+      // Wait 5 seconds before retrying
+      delay(5000);
     }
   }
 }
@@ -265,20 +265,8 @@ void reconnectMQTTV2() {
 void setupWifi() {
   delay(100);
 
-  // Set keep-alive to 180 seconds
-  // mqttClient.setKeepAlive(180);
-
   // you can use the insecure mode, when you want to avoid the certificates
   wifiClient.setInsecure();
-
-  // Kết nối WiFi
-  // WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  // Serial.print("[WiFi] Connecting");
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   delay(500); Serial.print(".");
-  // }
-  // Serial.println("\n[WiFi] IP: " + WiFi.localIP().toString());
-
 
   // We start by connecting to a WiFi network
   Serial.println();
@@ -356,8 +344,6 @@ void setup() {
   // MQTT
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(mqttCallback);
-  // reconnectMQTT();
-  reconnectMQTTV2();
 
   lastStatusPublish = millis();
 }
@@ -366,19 +352,9 @@ void setup() {
 void loop() {
   server.handleClient();
 
-  // Reconnect MQTT nếu mất kết nối
   if (!mqttClient.connected()) {
-    static unsigned long lastRetry = 0;
-    if (millis() - lastRetry > 5000) {
-      lastRetry = millis();
-      reconnectMQTT();
-    }
+    reconnectMQTTV2();
   }
-  // else {
-  //   // Client connected, so call client.loop() to process messages
-  //   mqttClient.loop();
-  // }
-
   mqttClient.loop();
 
   // Publish status định kỳ mỗi 1 phút
