@@ -105,7 +105,7 @@ String buildStatusJson() {
   doc["ip"] = ipAddress;
   doc["version"] = CLIENT_VERSION;
 
-  // Memory overflow error when the battery array has many elements
+  // Memory overflow error occurs when the pin array has too many elements.
   // JsonArray pins = doc.createNestedArray("pins");
 
   // for (int i = 0; i < VALID_PINS_COUNT; i++) {
