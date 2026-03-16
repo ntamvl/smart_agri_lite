@@ -46,7 +46,7 @@ String MQTT_TOPIC_STATUS; // vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP
 // Lưu IP Address
 String ipAddress;
 
-const unsigned long STATUS_INTERVAL_MS = 2000; // 2 giây
+const unsigned long STATUS_INTERVAL_MS = 30 * 1000; // 30 giây
 // =================================================
 
 ESP8266WebServer server(80);
@@ -403,7 +403,7 @@ void loop() {
   unsigned long now = millis();
   if (now - lastStatusPublish > STATUS_INTERVAL_MS) {
     lastStatusPublish = now;
-    Serial.println("[TIMER2] Publishing periodic pin status...");
+    Serial.println("[TIMER] Publishing periodic pin status...");
     publishPinStatus();
   }
 }
