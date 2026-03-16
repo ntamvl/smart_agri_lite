@@ -38,7 +38,7 @@ String MQTT_TOPIC_STATUS; // vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP
 // Lưu IP Address
 String ipAddress;
 
-const unsigned long STATUS_INTERVAL_MS = 60000; // 1 phút
+const unsigned long STATUS_INTERVAL_MS = 2000; // 2 giây
 // =================================================
 
 ESP8266WebServer server(80);
@@ -262,6 +262,35 @@ void reconnectMQTTV2() {
   }
 }
 
+void reconnectMQTTV3() {
+  // Loop until we're reconnected
+  while (!mqttClient.connected()) {
+    Serial.print("[MQTT] Attempting MQTT connection...");
+
+    // Create a random client ID
+    String clientId = "ESP8266Client-";
+    clientId += String(random(0xffff), HEX);
+
+    // Attempt to connect
+    if (mqttClient.connect(clientId.c_str(), MQTT_USER, MQTT_PASSWORD)) {
+      Serial.println(" Connected!");
+      Serial.println("[MQTT] state: " + String(mqttClient.state()));
+
+      mqttClient.subscribe(MQTT_TOPIC_SUB.c_str());
+      Serial.println("[MQTT] Subscribed: " + String(MQTT_TOPIC_SUB));
+
+      Serial.println("[MQTT] Publish status");
+      publishPinStatus(); // gửi status ngay khi kết nối lại
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
 void setupWifi() {
   delay(100);
 
@@ -353,11 +382,11 @@ void loop() {
   server.handleClient();
 
   if (!mqttClient.connected()) {
-    reconnectMQTTV2();
+    reconnectMQTTV3();
   }
   mqttClient.loop();
 
-  // Publish status định kỳ mỗi 1 phút
+  // Publish status định kỳ mỗi 2 giây
   if (millis() - lastStatusPublish >= STATUS_INTERVAL_MS) {
     lastStatusPublish = millis();
     Serial.println("[TIMER] Publishing periodic pin status...");
