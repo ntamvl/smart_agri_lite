@@ -8,7 +8,6 @@
 #include <LittleFS.h>
 #include <CertStoreBearSSL.h>
 
-String CLIENT_VERSION = "0.2.0";
 String CLIENT_VERSION = "0.2.1";
 
 // Set keep-alive 180 seconds
@@ -106,6 +105,7 @@ String buildStatusJson() {
   doc["ip"] = ipAddress;
   doc["version"] = CLIENT_VERSION;
 
+  // Memory overflow error when the battery array has many elements
   // JsonArray pins = doc.createNestedArray("pins");
 
   // for (int i = 0; i < VALID_PINS_COUNT; i++) {
