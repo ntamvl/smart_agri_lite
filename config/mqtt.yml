@@ -1,6 +1,6 @@
-host: d14dc5ff5a98465e9e937c41602b006b.s1.eu.hivemq.cloud
+host: <mqtt host>
 port: 8883
-username: stevennguyen
-password: Saigon2026
+username: <mqtt username>
+password: <mqtt password>
 ssl: true
 # client_id: smart_agri_web
