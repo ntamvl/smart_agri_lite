@@ -46,7 +46,7 @@ String MQTT_TOPIC_STATUS; // vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP
 // Lưu IP Address
 String ipAddress;
 
-const unsigned long STATUS_INTERVAL_MS = 30 * 1000; // 30 giây
+const unsigned long STATUS_INTERVAL_MS = 5 * 1000; // 5 giây
 // =================================================
 
 ESP8266WebServer server(80);
