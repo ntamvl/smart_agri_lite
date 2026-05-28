@@ -564,8 +564,6 @@ void loop() {
     lastStatusPublish = now;
     Serial.println("[TIMER] Publishing periodic pin status...");
     publishPinStatus();
-    // printRFLog(16);
-    // printRFLog(2);
   }
 
   // hanldeRFRemotePins();
