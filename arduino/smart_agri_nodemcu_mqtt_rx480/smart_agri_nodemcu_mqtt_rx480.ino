@@ -165,11 +165,11 @@ void setRelay(int relayPin, int value) {
 void setRFPin(int rfPin, int value) {
   pinMode(rfPin, OUTPUT);
   Serial.printf("[RF OUT] Change mode GPIO%d to OUTPUT\n", rfPin);
-  // pinMode(rfPin, INPUT_PULLUP);
+
   digitalWrite(rfPin, value);
   updatePinState(rfPin, value);
   Serial.printf("[RF OUT] GPIO%d = %d\n", rfPin, value);
-  // pinMode(rfPin, INPUT);
+
   pinMode(rfPin, INPUT_PULLUP);
   Serial.printf("[RF OUT] Change mode GPIO%d to INPUT_PULLUP\n", rfPin);
 }
@@ -569,11 +569,4 @@ void loop() {
   // hanldeRFRemotePins();
   // Đọc tín hiệu RF và đồng bộ relay
   syncRFToRelay();
-
-  // Serial.println("==============");
-  // printRFLog(rfPin1);
-  // printRFLog(rfPin2);
-  // printRFLog(rfPin3);
-  // Serial.println("==============");
-  // delay(500);
 }
