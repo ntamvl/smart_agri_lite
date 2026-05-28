@@ -14,34 +14,36 @@ String CLIENT_VERSION = "0.2.2";
 #define BROKER_KEEPALIVE 5 * 60
 
 // ========== CẤU HÌNH - SỬA TẠI ĐÂY ==========
-const char* WIFI_SSID     = "[Wifi SSID]";
-const char* WIFI_PASSWORD = "[Wifi Password]";
+const char* WIFI_SSID     = "[WIFI_SSID]";
+const char* WIFI_PASSWORD = "[WIFI_PASSWORD]";
 
 // Cấu hình MQTT
 // Đăng ký tài khoản HiveMQ (miễn phí) https://console.hivemq.cloud/
-const char* MQTT_SERVER    = "[MQTT Broker URL]"; // ví dụ: "mqtt.hivemq.com" hoặc "broker.emqx.io"
+const char* MQTT_SERVER    = "[MQTT_SERVER]"; // ví dụ: "mqtt.doraremote.com"
 const int   MQTT_PORT      = 8883;
-const char* MQTT_USER      = "[MQTT Username]"; // để trống nếu broker không yêu cầu auth
-const char* MQTT_PASSWORD  = "[MQTT Password]";
+const char* MQTT_USER      = "[MQTT_USER]";
+const char* MQTT_PASSWORD  = "[MQTT_PASSWORD]";
 
 // Mã định danh của thiết bị (duy nhất)
 // Cần thay đổi khi biên dịch cho thiết bị khác
-const char* MQTT_CLIENT_ID = "TAM_VINHLONG_01_ESP8266_PIN";
+const char* MQTT_CLIENT_ID = "TAM_03_ESP8266";
 
 // Tên thiết bị --> đồng bộ với backend
-String CLIENT_NAME = "vinhlong/tamvinhlong/01/esp8266";
+// xem file app/services/mqtt_service.rb
+// cap nhat gia tri TOPIC_PREFIX trong file mqtt_service.rb khi thay đổi
+String CLIENT_NAME = "doraremote/v01/esp8266";
 
 // MQTT CLient Test
-// subscribe topic: vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
-// mosquitto_sub -h <host> -u <username> -P <password> -p <PORT> -t vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
-// send command to control pin: vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin -m '{"pin": 2, "value": 0}'
-// mosquitto_pub -h <host> -u <username> -P <password> -p <PORT> -t vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin -m '{"pin": 2, "value": 0}'
+// subscribe topic: doraremote/v01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
+// mosquitto_sub -h <host> -u <username> -P <password> -p <PORT> -t doraremote/v01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
+// send command to control pin: doraremote/v01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin -m '{"pin": 2, "value": 0}'
+// mosquitto_pub -h <host> -u <username> -P <password> -p <PORT> -t doraremote/v01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin -m '{"pin": 2, "value": 0}'
 
 // Topic được build tự động từ MQTT_CLIENT_ID trong setup()
 // MQTT_TOPIC_SUB --> {CLIENT_NAME}/{MQTT_CLIENT_ID}/pin
 // MQTT_TOPIC_STATUS --> {CLIENT_NAME}/{MQTT_CLIENT_ID}/status_pin
-String MQTT_TOPIC_SUB;    // vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin
-String MQTT_TOPIC_STATUS; // vinhlong/tamvinhlong/01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
+String MQTT_TOPIC_SUB;    // doraremote/v01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/pin
+String MQTT_TOPIC_STATUS; // doraremote/v01/esp8266/TAM_VINHLONG_01_ESP8266_PIN/status_pin
 
 // Lưu IP Address
 String ipAddress;
