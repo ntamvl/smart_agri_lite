@@ -572,9 +572,10 @@ void loop() {
   // Đọc tín hiệu RF và đồng bộ relay
   syncRFToRelay();
 
-  printRFLog(rfPin1);
-  printRFLog(rfPin2);
-  printRFLog(rfPin3);
-  Serial.println("==============");
-  delay(500);
+  // Serial.println("==============");
+  // printRFLog(rfPin1);
+  // printRFLog(rfPin2);
+  // printRFLog(rfPin3);
+  // Serial.println("==============");
+  // delay(500);
 }
