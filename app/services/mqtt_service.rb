@@ -12,7 +12,7 @@ class MqttService
 
   # vinhlong/tamvinhlong/01/esp8266
   # smart_agri/device
-  TOPIC_PREFIX = "vinhlong/tamvinhlong/01/esp8266".freeze
+  TOPIC_PREFIX = "doraremote/v01/esp8266".freeze
 
   class << self
     def publish_control(device_code, pin_number, value)
