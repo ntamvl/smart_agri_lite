@@ -64,6 +64,15 @@ PubSubClient mqttClient(wifiClient);
 
 BearSSL::CertStore certStore;
 
+// ── Nguồn điều khiển relay ────────────────────────────────────
+enum ControlSource {
+  SOURCE_NONE,  // chưa có lệnh nào
+  SOURCE_RF,    // do Remote RF điều khiển
+  SOURCE_MQTT,  // do MQTT điều khiển
+  SOURCE_HTTP   // do HTTP điều khiển
+};
+
+
 // begin RF
 // ── Mapping RF 433MHz (RX480) ↔ Relay ────────────────────────
 // Mỗi cặp: { chân RF input, chân Relay output }
@@ -99,16 +108,41 @@ int rfPinFromRelay(int relayPin) {
 const int VALID_PINS[] = { 0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16 };
 const int VALID_PINS_COUNT = sizeof(VALID_PINS) / sizeof(VALID_PINS[0]);
 
+// ── Danh sách PIN OUTPUT ─────────────────────────
+const int VALID_OUT_PINS_COUNT = 4;
+const int VALID_OUT_PINS[] = { 12, 13, 14, 15 };
+// const int VALID_OUT_PINS_COUNT = sizeof(VALID_OUT_PINS) / sizeof(VALID_OUT_PINS[0]);
+
+// ── Danh sách PIN RF REMOTE ─────────────────────────
+const int VALID_RF_PINS[] = { 4, 5, 16 };
+
 // Lưu trạng thái các pin đã từng được điều khiển
 struct PinState {
   int pin;
   int value;
   bool active;  // đã được set chưa
+  ControlSource source; // ← nguồn điều khiển
 };
 
 PinState pinStates[sizeof(VALID_PINS) / sizeof(VALID_PINS[0])];
 
 unsigned long lastStatusPublish = 0;
+
+void setupValidOutPins() {
+  // for (int i = 0; i < VALID_PINS_COUNT; i++) {
+  //   Serial.println("Setup pin " + String(VALID_OUT_PINS[i]) + " OUTPUT");
+  //   pinMode(VALID_OUT_PINS[i], OUTPUT);
+  // }
+
+  pinMode(VALID_RF_PINS[0], INPUT_PULLUP);
+  pinMode(VALID_RF_PINS[1], INPUT_PULLUP);
+  pinMode(VALID_RF_PINS[2], INPUT_PULLUP);
+
+  pinMode(VALID_OUT_PINS[0], OUTPUT);
+  pinMode(VALID_OUT_PINS[1], OUTPUT);
+  pinMode(VALID_OUT_PINS[2], OUTPUT);
+  pinMode(VALID_OUT_PINS[3], OUTPUT);
+}
 
 void setupRFRemotePins() {
   // RF 433MHz Học Lệnh RX480
@@ -130,7 +164,7 @@ void hanldeRFRemotePins() {
   printRFLog(rfPin3);
 
   int statePin1 = digitalRead(rfPin1);
-  updatePinState(rfPin1, statePin1);
+  // updatePinState(rfPin1, statePin1, SOURCE_NONE);
   digitalWrite(LED_BUILTIN, statePin1);
 
   Serial.println("----------");
@@ -145,33 +179,45 @@ int findPinIndex(int pin) {
 }
 
 // ── Cập nhật trạng thái pin vào mảng ─────────────────────────
-void updatePinState(int pin, int value) {
+void updatePinState(int pin, int value, ControlSource source = SOURCE_NONE) {
   int idx = findPinIndex(pin);
   if (idx == -1) return;
   pinStates[idx].pin = pin;
   pinStates[idx].value = value;
   pinStates[idx].active = true;
+  pinStates[idx].source = source;
+}
+
+ControlSource getPinSource(int pin) {
+  int idx = findPinIndex(pin);
+  if (idx == -1) return SOURCE_NONE;
+  return pinStates[idx].source;
 }
 
 // ── Ghi relay (output) và cập nhật state ─────────────────────
-void setRelay(int relayPin, int value) {
+void setRelay(int relayPin, int value, ControlSource source) {
+  Serial.printf("[RELAY] SET relay pin %d = %d \n", relayPin, value);
   pinMode(relayPin, OUTPUT);
   digitalWrite(relayPin, value);
-  updatePinState(relayPin, value);
-  Serial.printf("[RELAY] GPIO%d = %d\n", relayPin, value);
+  updatePinState(relayPin, value, source);
+  Serial.printf("[RELAY] GPIO%d = %d (source=%d)\n", relayPin, value, source);
 }
 
 // ── Ghi RF pin (output ngược lại lên RX480) và cập nhật state
 void setRFPin(int rfPin, int value) {
   pinMode(rfPin, OUTPUT);
-  Serial.printf("[RF OUT] Change mode GPIO%d to OUTPUT\n", rfPin);
+  Serial.printf("[RF OUT] Change mode GPIO%d to OUTPUT \n", rfPin);
 
   digitalWrite(rfPin, value);
-  updatePinState(rfPin, value);
+  updatePinState(rfPin, value, SOURCE_NONE);
   Serial.printf("[RF OUT] GPIO%d = %d\n", rfPin, value);
 
+  Serial.printf("[RF OUT] Waiting to change mode GPIO%d to INPUT_PULLUP \n", rfPin);
+  delay(1000);
+
   pinMode(rfPin, INPUT_PULLUP);
-  Serial.printf("[RF OUT] Change mode GPIO%d to INPUT_PULLUP\n", rfPin);
+  Serial.printf("[RF OUT] Change mode GPIO%d to INPUT_PULLUP \n", rfPin);
+  delay(1000);
 }
 
 // ── Build JSON trạng thái toàn bộ pin đang active ────────────
@@ -223,7 +269,7 @@ bool isValidPin(int pin) {
 }
 
 // ── Xử lý JSON và điều khiển PIN ──────────────────────────────
-String controlPin(String jsonBody) {
+String controlPin(String jsonBody, ControlSource source) {
   StaticJsonDocument<128> doc;
   DeserializationError error = deserializeJson(doc, jsonBody);
 
@@ -247,49 +293,25 @@ String controlPin(String jsonBody) {
   int pairedRelay = relayPinFromRF(pin);  // pin là RF    → tìm relay tương ứng
 
   if (pairedRF != -1) {
-    Serial.println("\n\n");
-    Serial.println("****************RF");
-    setRFPin(pairedRF, value);
-    Serial.println("[RF-PIN] Sync RF Pin: " + String(pairedRF) + " = " + String(value));
+    // Lệnh nhắm vào relay pin
+    setRelay(pin, value, source);
+    updatePinState(pairedRF, digitalRead(pairedRF), source);
+  } else if (pairedRelay != -1) {
+    // Lệnh nhắm vào RF pin → điều khiển relay tương ứng
+    setRelay(pairedRelay, value, source);
+    updatePinState(pin, digitalRead(pin), source);
+  } else {
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, value);
+    updatePinState(pin, value, source);
+    Serial.printf("[PIN] GPIO%d = %d\n", pin, value);
   }
 
-  // if (pairedRF != -1) {
-  //   // Nhận lệnh trên relay pin → cập nhật cả relay lẫn RF
-  //   Serial.println("\n\n");
-  //   Serial.println("****************RF");
-  //   setRelay(pin, value);
-  //   setRFPin(pairedRF, value);
-
-  //   // Ghi nhận state RF pin theo giá trị thực tế hiện tại
-  //   // updatePinState(pairedRF, digitalRead(pairedRF));
-  //   updatePinState(pairedRF, value);
-  //   updatePinState(pin, value);
-  //   Serial.printf("[MQTT→RELAY] GPIO%d=%d | RF GPIO%d state=%d (read-only)\n", pin, value, pairedRF, digitalRead(pairedRF));
-  // } else if (pairedRelay != -1) {
-  //   // Nhận lệnh trên RF pin → cập nhật cả RF lẫn relay
-  //   Serial.println("\n\n");
-  //   Serial.println("****************RELAY");
-  //   setRFPin(pin, value);
-  //   setRelay(pairedRelay, value);
-  //   updatePinState(pin, value);
-  //   // updatePinState(pin, digitalRead(pin)); // đọc thực tế
-  //   updatePinState(pairedRF, value);
-  //   Serial.printf("[MQTT→RF PIN] Relay GPIO%d=%d | RF GPIO%d state=%d (read-only)\n", pairedRelay, value, pin, digitalRead(pin));
-  // } else {
-  //   // Pin thường, không thuộc cặp RF ↔ Relay
-  //   pinMode(pin, OUTPUT);
-  //   digitalWrite(pin, value);
-  //   updatePinState(pin, value);
-  //   Serial.printf("[PIN] GPIO%d = %d\n", pin, value);
-  // }
-
-  // setRFPin(16, value); // D0
-
   // Pin thường, không thuộc cặp RF ↔ Relay
-  pinMode(pin, OUTPUT);
-  digitalWrite(pin, value);
-  updatePinState(pin, value);
-  Serial.printf("[PIN] GPIO%d = %d\n", pin, value);
+  // pinMode(pin, OUTPUT);
+  // digitalWrite(pin, value);
+  // updatePinState(pin, value);
+  // Serial.printf("[PIN] GPIO%d = %d\n", pin, value);
 
   // Publish status ngay sau khi có thay đổi
   publishPinStatus();
@@ -298,24 +320,59 @@ String controlPin(String jsonBody) {
 }
 
 // ── Đọc RF input và đồng bộ relay ────────────────────────────
+// ── syncRFToRelay ─────────────────────────────────────────────
+// Chỉ sync khi relay đang do RF điều khiển (SOURCE_RF hoặc SOURCE_NONE)
+// Nếu relay đang do MQTT/HTTP điều khiển → bỏ qua tín hiệu RF
+// Trừ khi RF thay đổi so với lần đọc trước → người dùng chủ động nhấn remote
+//   → RF giành lại quyền điều khiển
 void syncRFToRelay() {
   for (int i = 0; i < RF_RELAY_COUNT; i++) {
     int rfPin = RF_RELAY_MAP[i].rfPin;
     int relayPin = RF_RELAY_MAP[i].relayPin;
 
+    // pinMode(rfPin, INPUT_PULLUP);
+
     int rfValue = digitalRead(rfPin);  // đọc thực tế từ RX480
     int relayValue = digitalRead(relayPin);
 
+    ControlSource relaySource = getPinSource(relayPin);
+
+    // Lấy giá trị RF lần trước từ state
+    int idx = findPinIndex(rfPin);
+    int prevRfValue = (idx != -1 && pinStates[idx].active)
+                      ? pinStates[idx].value
+                      : rfValue; // nếu chưa có state thì coi như không đổi
+
+    bool rfChanged = (rfValue != prevRfValue); // người dùng vừa nhấn remote
+
+    if (relaySource == SOURCE_MQTT || relaySource == SOURCE_HTTP) {
+      if (!rfChanged) {
+        // RF không thay đổi, relay đang do MQTT/HTTP giữ → bỏ qua
+        continue;
+      }
+      // RF thay đổi → người dùng chủ động nhấn remote → RF giành quyền điều khiển
+      Serial.printf("[RF OVERRIDE] RF GPIO%d: %d→%d, giành quyền từ MQTT/HTTP\n",
+                    rfPin, prevRfValue, rfValue);
+    }
+
+    // Relay chưa khớp với RF → cập nhật
+    if (rfValue != relayValue || rfChanged) {
+      Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n",
+                    rfPin, rfValue, relayPin, rfValue);
+      setRelay(relayPin, rfValue, SOURCE_RF);
+      updatePinState(rfPin, rfValue, SOURCE_RF);
+      publishPinStatus();
+    }
+
     // Chỉ cập nhật khi relay chưa khớp với tín hiệu RF thực tế
-    if (rfValue == relayValue) continue;
+    // if (rfValue == relayValue) continue;
 
-    Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n", rfPin, rfValue, relayPin, rfValue);
+    // Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n", rfPin, rfValue, relayPin, rfValue);
 
-    setRelay(relayPin, rfValue);
-    // setRFPin(rfPin, rfValue);
-    updatePinState(rfPin, rfValue);
-    updatePinState(relayPin, rfValue);
-    publishPinStatus();
+    // setRelay(relayPin, rfValue);
+    // updatePinState(rfPin, rfValue);
+    // updatePinState(relayPin, rfValue);
+    // publishPinStatus();
   }
 }
 
@@ -328,7 +385,7 @@ void handlePostPin() {
   }
   String body = server.arg("plain");
   Serial.println("[HTTP] POST /pin -> " + body);
-  String result = controlPin(body);
+  String result = controlPin(body, SOURCE_HTTP);
   int code = result.indexOf("\"error\"") != -1 ? 400 : 200;
   server.send(code, "application/json", result);
 }
@@ -356,7 +413,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   Serial.println("[MQTT] Topic: " + String(topic));
   Serial.println("[MQTT] Message: " + message);
 
-  String result = controlPin(message);  // publishPinStatus() gọi bên trong
+  String result = controlPin(message, SOURCE_MQTT);  // publishPinStatus() gọi bên trong
   Serial.println("[MQTT] Result: " + result);
 
   String responseTopic = String(topic) + "/response";
@@ -519,7 +576,9 @@ void setupData() {
     pinMode(RF_RELAY_MAP[i].rfPin, INPUT_PULLUP);
     pinMode(RF_RELAY_MAP[i].relayPin, OUTPUT);
     digitalWrite(RF_RELAY_MAP[i].relayPin, LOW);
-    updatePinState(RF_RELAY_MAP[i].relayPin, 0);
+    updatePinState(RF_RELAY_MAP[i].relayPin, 0, SOURCE_NONE);
+    // Đọc trạng thái ban đầu của RF pin
+    updatePinState(RF_RELAY_MAP[i].rfPin, digitalRead(RF_RELAY_MAP[i].rfPin), SOURCE_NONE);
   }
 }
 
@@ -531,6 +590,7 @@ void setup() {
 
   // setup RF Remote RX480
   // setupRFRemotePins();
+  setupValidOutPins();
 
   setupData();
   setupWifi();
@@ -562,8 +622,8 @@ void loop() {
   unsigned long now = millis();
   if (now - lastStatusPublish > STATUS_INTERVAL_MS) {
     lastStatusPublish = now;
-    Serial.println("[TIMER] Publishing periodic pin status...");
-    publishPinStatus();
+    // Serial.println("[TIMER] Publishing periodic pin status...");
+    // publishPinStatus();
   }
 
   // hanldeRFRemotePins();
