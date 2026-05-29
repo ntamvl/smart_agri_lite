@@ -8,11 +8,13 @@
 #include <LittleFS.h>
 #include <CertStoreBearSSL.h>
 
+#define ledPin LED_BUILTIN // GPIO2
+
 #define rfPin1 D0  // GPIO16 (16)
 #define rfPin2 D1  // GPIO5 (5)
 #define rfPin3 D2  // GPIO4 (4)
 
-String CLIENT_VERSION = "0.2.4";
+String CLIENT_VERSION = "0.3.0";
 
 // Set keep-alive 180 seconds
 #define BROKER_KEEPALIVE 5 * 60
@@ -82,8 +84,8 @@ struct RFRelayMap {
 };
 
 const RFRelayMap RF_RELAY_MAP[] = {
-  // { 16, 14 }, // D0 → D5
-  { 16, 2 },  // D0 → D5
+  { 16, 14 }, // D0 → D5
+  // { 16, 2 },  // D0 → LED BUILTIN GPIO2
   { 5, 12 },  // D1 → D6
   { 4, 13 },  // D2 → D7
 };
@@ -472,6 +474,10 @@ void reconnectMQTTV3() {
 
       Serial.println("[MQTT] Publish status");
       publishPinStatus();  // gửi status ngay khi kết nối lại
+
+      // Turn on led builtin
+      Serial.println("Turn on LED Builtin");
+      digitalWrite(ledPin, 0);
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
@@ -555,6 +561,12 @@ void setupData() {
   }
 }
 
+void setupLedBuiltin() {
+  pinMode(ledPin, OUTPUT);
+  Serial.println("[INIT] Turn off LED Builtin");
+  digitalWrite(ledPin, 1);
+}
+
 // ── Setup ──────────────────────────────────────────────────────
 void setup() {
   Serial.begin(115200);
@@ -568,6 +580,8 @@ void setup() {
   setupData();
   setupWifi();
   // setDateTime();
+
+  setupLedBuiltin();
 
   // REST API
   server.on("/pin", HTTP_POST, handlePostPin);
