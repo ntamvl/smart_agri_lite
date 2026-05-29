@@ -595,8 +595,8 @@ void loop() {
   unsigned long now = millis();
   if (now - lastStatusPublish > STATUS_INTERVAL_MS) {
     lastStatusPublish = now;
-    // Serial.println("[TIMER] Publishing periodic pin status...");
-    // publishPinStatus();
+    Serial.println("[TIMER] Publishing periodic pin status...");
+    publishPinStatus();
   }
 
   // Đọc tín hiệu RF và đồng bộ relay
