@@ -59,8 +59,10 @@ const unsigned long STATUS_INTERVAL_MS = 5 * 1000;  // 5 giây
 
 ESP8266WebServer server(80);
 
-// WiFiClient wifiClient;
-BearSSL::WiFiClientSecure wifiClient;
+WiFiClient wifiClient;
+
+// Uncomment for MQTT SSL, port 8883
+// BearSSL::WiFiClientSecure wifiClient;
 
 PubSubClient mqttClient(wifiClient);
 
@@ -493,7 +495,8 @@ void setupWifi() {
   delay(100);
 
   // you can use the insecure mode, when you want to avoid the certificates
-  wifiClient.setInsecure();
+  // Uncomment for MQTT SSL, port 8883
+  // wifiClient.setInsecure();
 
   // We start by connecting to a WiFi network
   Serial.println();
