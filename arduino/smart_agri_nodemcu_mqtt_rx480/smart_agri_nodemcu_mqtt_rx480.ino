@@ -88,6 +88,7 @@ const RFRelayMap RF_RELAY_MAP[] = {
   // { 16, 2 },  // D0 → LED BUILTIN GPIO2
   { 5, 12 },  // D1 → D6
   { 4, 13 },  // D2 → D7
+  { 0, 15 },  // D3 → D8
 };
 const int RF_RELAY_COUNT = sizeof(RF_RELAY_MAP) / sizeof(RF_RELAY_MAP[0]);
 
