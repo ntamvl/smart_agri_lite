@@ -158,18 +158,6 @@ void printRFLog(int pin) {
   Serial.println("Trang thai chan pin " + String(pin) + " = " + String(state) + " - state: " + stateValue);
 }
 
-void hanldeRFRemotePins() {
-  printRFLog(rfPin1);
-  printRFLog(rfPin2);
-  printRFLog(rfPin3);
-
-  int statePin1 = digitalRead(rfPin1);
-  // updatePinState(rfPin1, statePin1, SOURCE_NONE);
-  digitalWrite(LED_BUILTIN, statePin1);
-
-  Serial.println("----------");
-}
-
 // ── Tìm index của pin trong mảng pinStates ────────────────────
 int findPinIndex(int pin) {
   for (int i = 0; i < VALID_PINS_COUNT; i++) {
@@ -307,12 +295,6 @@ String controlPin(String jsonBody, ControlSource source) {
     Serial.printf("[PIN] GPIO%d = %d\n", pin, value);
   }
 
-  // Pin thường, không thuộc cặp RF ↔ Relay
-  // pinMode(pin, OUTPUT);
-  // digitalWrite(pin, value);
-  // updatePinState(pin, value);
-  // Serial.printf("[PIN] GPIO%d = %d\n", pin, value);
-
   // Publish status ngay sau khi có thay đổi
   publishPinStatus();
 
@@ -330,8 +312,6 @@ void syncRFToRelay() {
     int rfPin = RF_RELAY_MAP[i].rfPin;
     int relayPin = RF_RELAY_MAP[i].relayPin;
 
-    // pinMode(rfPin, INPUT_PULLUP);
-
     int rfValue = digitalRead(rfPin);  // đọc thực tế từ RX480
     int relayValue = digitalRead(relayPin);
 
@@ -339,9 +319,7 @@ void syncRFToRelay() {
 
     // Lấy giá trị RF lần trước từ state
     int idx = findPinIndex(rfPin);
-    int prevRfValue = (idx != -1 && pinStates[idx].active)
-                      ? pinStates[idx].value
-                      : rfValue; // nếu chưa có state thì coi như không đổi
+    int prevRfValue = (idx != -1 && pinStates[idx].active) ? pinStates[idx].value : rfValue; // nếu chưa có state thì coi như không đổi
 
     bool rfChanged = (rfValue != prevRfValue); // người dùng vừa nhấn remote
 
@@ -357,18 +335,13 @@ void syncRFToRelay() {
 
     // Relay chưa khớp với RF → cập nhật
     if (rfValue != relayValue || rfChanged) {
-      Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n",
-                    rfPin, rfValue, relayPin, rfValue);
+      Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n", rfPin, rfValue, relayPin, rfValue);
       setRelay(relayPin, rfValue, SOURCE_RF);
       updatePinState(rfPin, rfValue, SOURCE_RF);
       publishPinStatus();
     }
 
-    // Chỉ cập nhật khi relay chưa khớp với tín hiệu RF thực tế
-    // if (rfValue == relayValue) continue;
-
     // Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n", rfPin, rfValue, relayPin, rfValue);
-
     // setRelay(relayPin, rfValue);
     // updatePinState(rfPin, rfValue);
     // updatePinState(relayPin, rfValue);
@@ -571,9 +544,9 @@ void setupData() {
     pinStates[i] = { VALID_PINS[i], 0, false };
   }
 
-  // Cấu hình RF pins là INPUT_PULLUP, relay pins là OUTPUT
+  // Cấu hình RF pins là INPUT, INPUT_PULLUP, relay pins là OUTPUT
   for (int i = 0; i < RF_RELAY_COUNT; i++) {
-    pinMode(RF_RELAY_MAP[i].rfPin, INPUT_PULLUP);
+    pinMode(RF_RELAY_MAP[i].rfPin, INPUT);
     pinMode(RF_RELAY_MAP[i].relayPin, OUTPUT);
     digitalWrite(RF_RELAY_MAP[i].relayPin, LOW);
     updatePinState(RF_RELAY_MAP[i].relayPin, 0, SOURCE_NONE);
@@ -590,7 +563,7 @@ void setup() {
 
   // setup RF Remote RX480
   // setupRFRemotePins();
-  setupValidOutPins();
+  // setupValidOutPins();
 
   setupData();
   setupWifi();
@@ -626,7 +599,6 @@ void loop() {
     // publishPinStatus();
   }
 
-  // hanldeRFRemotePins();
   // Đọc tín hiệu RF và đồng bộ relay
   syncRFToRelay();
 }
