@@ -14,7 +14,7 @@
 #define rfPin2 D1  // GPIO5 (5)
 #define rfPin3 D2  // GPIO4 (4)
 
-String CLIENT_VERSION = "0.3.0";
+String CLIENT_VERSION = "0.3.1";
 
 // Set keep-alive 180 seconds
 #define BROKER_KEEPALIVE 5 * 60
