@@ -1,5 +1,5 @@
 # Smart Agri Web App
-Ứng dụngr  điều khiển ESP8266 thông qua giao diện web
+Ứng dụng  điều khiển ESP8266 thông qua giao diện web
 
 ## Register for a HiveMQ account (free)
 https://console.hivemq.cloud/
