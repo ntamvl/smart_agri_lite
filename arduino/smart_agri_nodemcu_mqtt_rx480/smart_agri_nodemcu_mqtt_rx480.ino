@@ -603,6 +603,9 @@ void setup() {
 
 // ── Loop ───────────────────────────────────────────────────────
 void loop() {
+  // Đọc tín hiệu RF và đồng bộ relay
+  syncRFToRelay();
+
   server.handleClient();
 
   if (!mqttClient.connected()) {
@@ -615,8 +618,5 @@ void loop() {
     lastStatusPublish = now;
     Serial.println("[TIMER] Publishing periodic pin status...");
     publishPinStatus();
-  }
-
-  // Đọc tín hiệu RF và đồng bộ relay
-  syncRFToRelay();
+  }  
 }
