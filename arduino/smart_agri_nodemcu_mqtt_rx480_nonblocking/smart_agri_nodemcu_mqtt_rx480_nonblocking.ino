@@ -11,7 +11,15 @@ const char* MQTT_SERVER    = "192.168.1.100";
 const int   MQTT_PORT      = 1883;
 const char* MQTT_USER      = "";
 const char* MQTT_PASSWORD  = "";
-const char* MQTT_CLIENT_ID = "ESP8266_PIN_CTRL";
+
+// Mã định danh của thiết bị (duy nhất)
+// Cần thay đổi khi biên dịch cho thiết bị khác
+const char* MQTT_CLIENT_ID = "TAM_10";
+
+// Tên thiết bị --> đồng bộ với backend
+// xem file app/services/mqtt_service.rb
+// cap nhat gia tri TOPIC_PREFIX trong file mqtt_service.rb khi thay đổi
+String CLIENT_NAME = "doraremote/v01/esp8266";
 
 const unsigned long STATUS_INTERVAL_MS = 60000;
 const unsigned long WIFI_RETRY_MS      = 10000; // thử kết nối lại WiFi mỗi 10s
@@ -324,8 +332,14 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\n[BOOT] ESP8266 PIN Controller");
 
-  MQTT_TOPIC_SUB    = "esp8266/" + String(MQTT_CLIENT_ID) + "/pin";
-  MQTT_TOPIC_STATUS = "esp8266/" + String(MQTT_CLIENT_ID) + "/status_pin";
+  // MQTT_TOPIC_SUB    = "esp8266/" + String(MQTT_CLIENT_ID) + "/pin";
+  // MQTT_TOPIC_STATUS = "esp8266/" + String(MQTT_CLIENT_ID) + "/status_pin";
+  // Build topic từ CLIENT_ID
+  MQTT_TOPIC_SUB = CLIENT_NAME + "/" + String(MQTT_CLIENT_ID) + "/pin";
+  MQTT_TOPIC_STATUS = CLIENT_NAME + "/" + String(MQTT_CLIENT_ID) + "/status_pin";
+
+  Serial.println("[MQTT] Sub topic:    " + MQTT_TOPIC_SUB);
+  Serial.println("[MQTT] Status topic: " + MQTT_TOPIC_STATUS);
 
   // Khởi tạo pinStates
   for (int i = 0; i < VALID_PINS_COUNT; i++)
