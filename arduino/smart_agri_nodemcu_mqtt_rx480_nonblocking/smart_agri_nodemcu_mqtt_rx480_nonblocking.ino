@@ -1,20 +1,20 @@
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
 // ========== CẤU HÌNH - SỬA TẠI ĐÂY ==========
-const char* WIFI_SSID      = "YOUR_WIFI_SSID";
-const char* WIFI_PASSWORD  = "YOUR_WIFI_PASSWORD";
+const char *WIFI_SSID = "YOUR_WIFI_SSID";
+const char *WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
 
-const char* MQTT_SERVER    = "192.168.1.100";
-const int   MQTT_PORT      = 1883;
-const char* MQTT_USER      = "";
-const char* MQTT_PASSWORD  = "";
+const char *MQTT_SERVER = "192.168.1.100";
+const int MQTT_PORT = 1883;
+const char *MQTT_USER = "";
+const char *MQTT_PASSWORD = "";
 
 // Mã định danh của thiết bị (duy nhất)
 // Cần thay đổi khi biên dịch cho thiết bị khác
-const char* MQTT_CLIENT_ID = "TAM_10";
+const char *MQTT_CLIENT_ID = "TAM_10";
 
 // Tên thiết bị --> đồng bộ với backend
 // xem file app/services/mqtt_service.rb
@@ -22,8 +22,8 @@ const char* MQTT_CLIENT_ID = "TAM_10";
 String CLIENT_NAME = "doraremote/v01/esp8266";
 
 const unsigned long STATUS_INTERVAL_MS = 60000;
-const unsigned long WIFI_RETRY_MS      = 10000; // thử kết nối lại WiFi mỗi 10s
-const unsigned long WIFI_TIMEOUT_MS    = 15000; // timeout 1 lần thử WiFi
+const unsigned long WIFI_RETRY_MS = 10000;   // thử kết nối lại WiFi mỗi 10s
+const unsigned long WIFI_TIMEOUT_MS = 15000; // timeout 1 lần thử WiFi
 // =================================================
 
 String MQTT_TOPIC_SUB;
@@ -34,46 +34,51 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 // ── Trạng thái WiFi/HTTP server ───────────────────────────────
-bool wifiConnected   = false;
+bool wifiConnected = false;
 bool httpServerStarted = false;
 
-unsigned long wifiRetryTimer    = 0; // thời điểm thử lại
-unsigned long wifiConnectStart  = 0; // thời điểm bắt đầu thử lần này
-bool          wifiConnecting    = false;
+unsigned long wifiRetryTimer = 0;   // thời điểm thử lại
+unsigned long wifiConnectStart = 0; // thời điểm bắt đầu thử lần này
+bool wifiConnecting = false;
 
 // ── Nguồn điều khiển ─────────────────────────────────────────
 enum ControlSource { SOURCE_NONE, SOURCE_RF, SOURCE_MQTT, SOURCE_HTTP };
 
 // ── Mapping RF ↔ Relay ────────────────────────────────────────
-struct RFRelayMap { int rfPin; int relayPin; };
+struct RFRelayMap {
+  int rfPin;
+  int relayPin;
+};
 
 const RFRelayMap RF_RELAY_MAP[] = {
-  { 16, 14 },
-  {  5, 12 },
-  {  4, 13 },
+    {16, 14},
+    {5, 12},
+    {4, 13},
 };
 const int RF_RELAY_COUNT = sizeof(RF_RELAY_MAP) / sizeof(RF_RELAY_MAP[0]);
 
 int relayPinFromRF(int rfPin) {
   for (int i = 0; i < RF_RELAY_COUNT; i++)
-    if (RF_RELAY_MAP[i].rfPin == rfPin) return RF_RELAY_MAP[i].relayPin;
+    if (RF_RELAY_MAP[i].rfPin == rfPin)
+      return RF_RELAY_MAP[i].relayPin;
   return -1;
 }
 
 int rfPinFromRelay(int relayPin) {
   for (int i = 0; i < RF_RELAY_COUNT; i++)
-    if (RF_RELAY_MAP[i].relayPin == relayPin) return RF_RELAY_MAP[i].rfPin;
+    if (RF_RELAY_MAP[i].relayPin == relayPin)
+      return RF_RELAY_MAP[i].rfPin;
   return -1;
 }
 
 // ── PinState ──────────────────────────────────────────────────
-const int VALID_PINS[]     = {0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16};
+const int VALID_PINS[] = {0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16};
 const int VALID_PINS_COUNT = sizeof(VALID_PINS) / sizeof(VALID_PINS[0]);
 
 struct PinState {
-  int           pin;
-  int           value;
-  bool          active;
+  int pin;
+  int value;
+  bool active;
   ControlSource source;
 };
 
@@ -82,15 +87,17 @@ unsigned long lastStatusPublish = 0;
 
 int findPinIndex(int pin) {
   for (int i = 0; i < VALID_PINS_COUNT; i++)
-    if (VALID_PINS[i] == pin) return i;
+    if (VALID_PINS[i] == pin)
+      return i;
   return -1;
 }
 
 void updatePinState(int pin, int value, ControlSource source = SOURCE_NONE) {
   int idx = findPinIndex(pin);
-  if (idx == -1) return;
-  pinStates[idx].pin    = pin;
-  pinStates[idx].value  = value;
+  if (idx == -1)
+    return;
+  pinStates[idx].pin = pin;
+  pinStates[idx].value = value;
   pinStates[idx].active = true;
   pinStates[idx].source = source;
 }
@@ -114,15 +121,17 @@ void setRelay(int relayPin, int value, ControlSource source) {
 String buildStatusJson() {
   int activeCount = 0;
   for (int i = 0; i < VALID_PINS_COUNT; i++)
-    if (pinStates[i].active) activeCount++;
+    if (pinStates[i].active)
+      activeCount++;
 
   DynamicJsonDocument doc(64 + activeCount * 32);
   doc["status"] = "ok";
   JsonArray pins = doc.createNestedArray("pins");
   for (int i = 0; i < VALID_PINS_COUNT; i++) {
-    if (!pinStates[i].active) continue;
+    if (!pinStates[i].active)
+      continue;
     JsonObject obj = pins.createNestedObject();
-    obj["pin"]   = pinStates[i].pin;
+    obj["pin"] = pinStates[i].pin;
     obj["value"] = pinStates[i].value;
   }
   String output;
@@ -131,9 +140,11 @@ String buildStatusJson() {
 }
 
 void publishPinStatus() {
-  if (!mqttClient.connected()) return; // silent skip nếu không có MQTT
+  if (!mqttClient.connected())
+    return; // silent skip nếu không có MQTT
   String payload = buildStatusJson();
-  bool ok = mqttClient.publish(MQTT_TOPIC_STATUS.c_str(), payload.c_str(), true);
+  bool ok =
+      mqttClient.publish(MQTT_TOPIC_STATUS.c_str(), payload.c_str(), true);
   Serial.println("[MQTT] Status -> " + MQTT_TOPIC_STATUS);
   Serial.println("[MQTT] Payload: " + payload);
   Serial.println(ok ? "[MQTT] Published OK" : "[MQTT] Publish FAILED");
@@ -147,7 +158,7 @@ String controlPin(String jsonBody, ControlSource source) {
   if (!doc.containsKey("pin") || !doc.containsKey("value"))
     return "{\"status\":\"error\",\"message\":\"Missing 'pin' or 'value'\"}";
 
-  int pin   = doc["pin"].as<int>();
+  int pin = doc["pin"].as<int>();
   int value = doc["value"].as<int>();
 
   if (!isValidPin(pin))
@@ -155,7 +166,7 @@ String controlPin(String jsonBody, ControlSource source) {
   if (value != 0 && value != 1)
     return "{\"status\":\"error\",\"message\":\"Value must be 0 or 1\"}";
 
-  int pairedRF    = rfPinFromRelay(pin);
+  int pairedRF = rfPinFromRelay(pin);
   int pairedRelay = relayPinFromRF(pin);
 
   if (pairedRF != -1) {
@@ -179,29 +190,31 @@ String controlPin(String jsonBody, ControlSource source) {
 // ── syncRFToRelay (không phụ thuộc WiFi) ─────────────────────
 void syncRFToRelay() {
   for (int i = 0; i < RF_RELAY_COUNT; i++) {
-    int rfPin    = RF_RELAY_MAP[i].rfPin;
+    int rfPin = RF_RELAY_MAP[i].rfPin;
     int relayPin = RF_RELAY_MAP[i].relayPin;
 
-    int rfValue    = digitalRead(rfPin);
+    int rfValue = digitalRead(rfPin);
     int relayValue = digitalRead(relayPin);
 
     ControlSource relaySource = getPinSource(relayPin);
 
-    int idx         = findPinIndex(rfPin);
-    int prevRfValue = (idx != -1 && pinStates[idx].active)
-                      ? pinStates[idx].value : rfValue;
+    int idx = findPinIndex(rfPin);
+    int prevRfValue =
+        (idx != -1 && pinStates[idx].active) ? pinStates[idx].value : rfValue;
 
     bool rfChanged = (rfValue != prevRfValue);
 
     if (relaySource == SOURCE_MQTT || relaySource == SOURCE_HTTP) {
-      if (!rfChanged) continue;
-      Serial.printf("[RF OVERRIDE] RF GPIO%d: %d→%d, giành quyền từ MQTT/HTTP\n",
-                    rfPin, prevRfValue, rfValue);
+      if (!rfChanged)
+        continue;
+      Serial.printf(
+          "[RF OVERRIDE] RF GPIO%d: %d→%d, giành quyền từ MQTT/HTTP\n", rfPin,
+          prevRfValue, rfValue);
     }
 
     if (rfValue != relayValue || rfChanged) {
-      Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n",
-                    rfPin, rfValue, relayPin, rfValue);
+      Serial.printf("[RF SYNC] RF GPIO%d=%d → Relay GPIO%d=%d\n", rfPin,
+                    rfValue, relayPin, rfValue);
       setRelay(relayPin, rfValue, SOURCE_RF);
       updatePinState(rfPin, rfValue, SOURCE_RF);
       publishPinStatus(); // chỉ gửi nếu MQTT đang kết nối
@@ -213,7 +226,7 @@ void syncRFToRelay() {
 void startWifiConnect() {
   Serial.println("[WiFi] Đang kết nối tới: " + String(WIFI_SSID));
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  wifiConnecting   = true;
+  wifiConnecting = true;
   wifiConnectStart = millis();
 }
 
@@ -222,7 +235,7 @@ void handleWifi() {
   if (WiFi.status() == WL_CONNECTED) {
     if (!wifiConnected) {
       // Vừa kết nối thành công
-      wifiConnected  = true;
+      wifiConnected = true;
       wifiConnecting = false;
       Serial.println("\n[WiFi] Đã kết nối! IP: " + WiFi.localIP().toString());
 
@@ -247,7 +260,8 @@ void handleWifi() {
 
   // Đang trong lần thử hiện tại → kiểm tra timeout
   if (wifiConnecting) {
-    if (millis() - wifiConnectStart < WIFI_TIMEOUT_MS) return; // chờ tiếp
+    if (millis() - wifiConnectStart < WIFI_TIMEOUT_MS)
+      return; // chờ tiếp
     // Timeout lần này
     wifiConnecting = false;
     wifiRetryTimer = millis();
@@ -264,7 +278,8 @@ void handleWifi() {
 
 // ── MQTT: kết nối lại non-blocking ───────────────────────────
 void handleMqtt() {
-  if (!wifiConnected) return; // không có WiFi → bỏ qua
+  if (!wifiConnected)
+    return; // không có WiFi → bỏ qua
 
   if (mqttClient.connected()) {
     mqttClient.loop();
@@ -272,13 +287,15 @@ void handleMqtt() {
   }
 
   static unsigned long lastMqttRetry = 0;
-  if (millis() - lastMqttRetry < 5000) return;
+  if (millis() - lastMqttRetry < 5000)
+    return;
   lastMqttRetry = millis();
 
   Serial.print("[MQTT] Connecting...");
-  bool connected = (strlen(MQTT_USER) > 0)
-    ? mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD)
-    : mqttClient.connect(MQTT_CLIENT_ID);
+  bool connected =
+      (strlen(MQTT_USER) > 0)
+          ? mqttClient.connect(MQTT_CLIENT_ID, MQTT_USER, MQTT_PASSWORD)
+          : mqttClient.connect(MQTT_CLIENT_ID);
 
   if (connected) {
     Serial.println(" Connected!");
@@ -294,11 +311,12 @@ void handleMqtt() {
 void handlePostPin() {
   if (!server.hasArg("plain")) {
     server.send(400, "application/json",
-      "{\"status\":\"error\",\"message\":\"Empty body\"}"); return;
+                "{\"status\":\"error\",\"message\":\"Empty body\"}");
+    return;
   }
   String result = controlPin(server.arg("plain"), SOURCE_HTTP);
-  server.send(result.indexOf("\"error\"") != -1 ? 400 : 200,
-              "application/json", result);
+  server.send(result.indexOf("\"error\"") != -1 ? 400 : 200, "application/json",
+              result);
 }
 
 void handleGetStatus() {
@@ -314,12 +332,13 @@ void handleGetStatus() {
 
 void handleNotFound() {
   server.send(404, "application/json",
-    "{\"status\":\"error\",\"message\":\"Endpoint not found\"}");
+              "{\"status\":\"error\",\"message\":\"Endpoint not found\"}");
 }
 
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
+void mqttCallback(char *topic, byte *payload, unsigned int length) {
   String message = "";
-  for (unsigned int i = 0; i < length; i++) message += (char)payload[i];
+  for (unsigned int i = 0; i < length; i++)
+    message += (char)payload[i];
   Serial.println("[MQTT] Topic: " + String(topic));
   Serial.println("[MQTT] Message: " + message);
   String result = controlPin(message, SOURCE_MQTT);
@@ -336,7 +355,8 @@ void setup() {
   // MQTT_TOPIC_STATUS = "esp8266/" + String(MQTT_CLIENT_ID) + "/status_pin";
   // Build topic từ CLIENT_ID
   MQTT_TOPIC_SUB = CLIENT_NAME + "/" + String(MQTT_CLIENT_ID) + "/pin";
-  MQTT_TOPIC_STATUS = CLIENT_NAME + "/" + String(MQTT_CLIENT_ID) + "/status_pin";
+  MQTT_TOPIC_STATUS =
+      CLIENT_NAME + "/" + String(MQTT_CLIENT_ID) + "/status_pin";
 
   Serial.println("[MQTT] Sub topic:    " + MQTT_TOPIC_SUB);
   Serial.println("[MQTT] Status topic: " + MQTT_TOPIC_STATUS);
@@ -351,8 +371,8 @@ void setup() {
     pinMode(RF_RELAY_MAP[i].relayPin, OUTPUT);
     digitalWrite(RF_RELAY_MAP[i].relayPin, LOW);
     updatePinState(RF_RELAY_MAP[i].relayPin, 0, SOURCE_NONE);
-    updatePinState(RF_RELAY_MAP[i].rfPin,
-                   digitalRead(RF_RELAY_MAP[i].rfPin), SOURCE_NONE);
+    updatePinState(RF_RELAY_MAP[i].rfPin, digitalRead(RF_RELAY_MAP[i].rfPin),
+                   SOURCE_NONE);
   }
   Serial.println("[RF] RF + Relay sẵn sàng");
 
@@ -376,7 +396,8 @@ void loop() {
   handleMqtt();
 
   // HTTP server chỉ chạy khi đã có WiFi
-  if (httpServerStarted) server.handleClient();
+  if (httpServerStarted)
+    server.handleClient();
 
   // Publish status định kỳ
   if (millis() - lastStatusPublish >= STATUS_INTERVAL_MS) {
