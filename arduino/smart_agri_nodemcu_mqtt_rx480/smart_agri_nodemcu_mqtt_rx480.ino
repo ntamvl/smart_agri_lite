@@ -179,6 +179,7 @@ void updatePinState(int pin, int value, ControlSource source = SOURCE_NONE) {
   pinStates[idx].value = value;
   pinStates[idx].active = true;
   pinStates[idx].source = source;
+  Serial.println("pin: " + String(pin) + "; value: " + String(value) + "; source: " + String(source));
 }
 
 ControlSource getPinSource(int pin) {
